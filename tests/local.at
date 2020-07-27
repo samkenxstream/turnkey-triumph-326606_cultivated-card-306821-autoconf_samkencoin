@@ -326,6 +326,7 @@ m4_define([AT_CHECK_CONFIGURE],
 # - AC_SUBST'ed variables
 #   (FIXME: Generate a list of these automatically.)
 # - _|@|.[*#?$].|argv|ARGC|LINENO|OLDPWD|PIPESTATUS|RANDOM|SECONDS
+#   |_AST_FEATURES
 #   Some variables some shells use and change.
 #   `.[*#?$].' catches `$#' etc. which are displayed like this:
 #      | '!'=18186
@@ -375,7 +376,8 @@ if test -f state-env.before && test -f state-env.after; then
       [AWK|LEX|LEXLIB|LEX_OUTPUT_ROOT|LN_S|M4|MKDIR_P|RANLIB|SET_MAKE|YACC],
       [GREP|[EF]GREP|SED],
       [[_@]|.[*#?$].],
-      [argv|ARGC|LINENO|BASH_ARGC|BASH_ARGV|OLDPWD|PIPESTATUS|RANDOM|SECONDS]))=' \
+      [argv|ARGC|LINENO|BASH_ARGC|BASH_ARGV|OLDPWD|PIPESTATUS|RANDOM],
+      [SECONDS|_AST_FEATURES]))=' \
      $act_file ||
        test $? -eq 1 || echo failed >&2
     ) 2>stderr-$act_file |
