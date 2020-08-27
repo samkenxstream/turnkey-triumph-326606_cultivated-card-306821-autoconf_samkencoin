@@ -299,6 +299,79 @@ dnl code inserted by AS_REQUIRE_SHELL_FN will appear _after_ this point.
 dnl We shouldn't have to worry about any traps being active at this point.
 exit 255])# _AS_REEXEC_WITH_SHELL
 
+# _AS_ENSURE_STANDARD_FDS
+# -----------------------
+# Ensure that file descriptor 0 is open and readable, and file
+# descriptors 1 and 2 are open and writable.  This is a defensive
+# measure against weird environments that run configure scripts
+# with these descriptors closed.
+#
+# There is no universally portable way to test the readability
+# or writability of a file descriptor from a shell script, but there
+# are several semi-portable techniques which we try in descending order
+# of how likely we are to be on a system where they will work, how efficient
+# they are, and whether they can tell whether an fd is open for *reading*.
+#
+# This code runs before _AS_DETECT_BETTER_SHELL and must therefore be
+# extra careful about using only portable shell constructs.  Also, the
+# tests must not actually read or write any data on the fds being
+# tested, and must take care not to do anything that could temporarily
+# open fds 0, 1, or 2 in the parent shell.  For instance, command
+# substitutions `...` may be implemented with a pipe to the parent
+# shell; if fd 0 was closed to begin with, the read end of this pipe
+# could temporarily occupy fd 0 and invalidate the test.
+m4_defun([_AS_ENSURE_STANDARD_FDS], [dnl
+# If possible ensure that fds 0, 1, and 2 are open in an appropriate way.
+# If Linux's /proc/<pid>/fdinfo directory is available, we can use it
+# to do an accurate test without any forks.
+if test -d /proc/$$/fdinfo; then
+  for as_fd in 0 1 2; do
+    as_fd_ok=false
+    if test -f /proc/$$/fdinfo/$as_fd; then
+      # `while read ...; do ...; done < file` might execute the loop
+      # in a subshell, preventing it from setting as_fd_ok.
+      exec 3</proc/$$/fdinfo/$as_fd
+      while read as_tag as_value <&3; do
+        if test x"$as_tag" = "xflags:"; then
+          # $as_value is the number that fcntl($as_fd, F_GETFL, 0)
+          # would return, in octal. Since /proc/<pid>/fdinfo is
+          # already Linux-specific, we can assume that O_ACCMODE == 3,
+          # O_RDONLY == 0, O_WRONLY == 1, O_RDWR == 2. Rather than
+          # trying to mask out the top bit of the lowest (octal) digit
+          # we include both possibilities in each case pattern.
+          if test "$as_fd" = 0; then #(
+            case "$as_value" in *0 | *4 | *2 | *6) as_fd_ok=true;; esac
+          else #(
+            case "$as_value" in *1 | *5 | *2 | *6) as_fd_ok=true;; esac
+          fi
+          break
+        fi
+      done
+      exec 3<&-
+    fi
+    if test "$as_fd_ok" = "false"; then
+      if test "$as_fd" = 0; then
+        eval "exec $as_fd</dev/null"
+      else
+        eval "exec $as_fd>/dev/null"
+      fi
+    fi
+  done
+
+else
+  # Shell redirection operations can only tell whether an fd is open,
+  # not whether it is readable or writable, so this is a last resort.
+  # `exec >&n` fails in POSIX sh when fd N is closed, but succeeds
+  # regardless of whether fd N is open in some old shells, e.g. Solaris
+  # /bin/sh.  We can live with that; at least it never fails when fd N
+  # is *open*.
+  if (exec 3>&0) 2>/dev/null; then :; else exec 0</dev/null; fi
+  if (exec 3>&1) 2>/dev/null; then :; else exec 1>/dev/null; fi
+  if (exec 3>&2)            ; then :; else exec 2>/dev/null; fi
+
+fi
+])
+
 
 # _AS_PREPARE
 # -----------
@@ -456,7 +529,6 @@ m4_defun([_AS_SHELL_SANITIZE],
 [m4_text_box([M4sh Initialization.])
 
 AS_BOURNE_COMPATIBLE
-_AS_PATH_SEPARATOR_PREPARE
 
 # IFS
 # We need space, tab and new line, in precisely that order.  Quoting is
@@ -467,6 +539,27 @@ as_nl='
 '
 export as_nl
 IFS=" ""	$as_nl"
+
+# Unset variables that we do not need and which cause bugs (e.g. in
+# pre-3.0 UWIN ksh).  But do not cause bugs in bash 2.01; the "|| exit 1"
+# suppresses any "Segmentation fault" message there.  '((' could
+# trigger a bug in pdksh 5.2.14.
+for as_var in BASH_ENV ENV MAIL MAILPATH CDPATH
+do eval test \${$as_var+y} \
+  && ( (unset $as_var) || exit 1) >/dev/null 2>&1 && unset $as_var || :
+done
+PS1='$ '
+PS2='> '
+PS4='+ '
+
+# NLS nuisances.
+LC_ALL=C
+export LC_ALL
+LANGUAGE=C
+export LANGUAGE
+
+_AS_ENSURE_STANDARD_FDS
+_AS_PATH_SEPARATOR_PREPARE
 
 # Find who we are.  Look in the path if we contain no directory separator.
 as_myself=
@@ -486,26 +579,6 @@ if test ! -f "$as_myself"; then
   AS_EXIT
 fi
 
-# Unset variables that we do not need and which cause bugs (e.g. in
-# pre-3.0 UWIN ksh).  But do not cause bugs in bash 2.01; the "|| exit 1"
-# suppresses any "Segmentation fault" message there.  '((' could
-# trigger a bug in pdksh 5.2.14.
-for as_var in BASH_ENV ENV MAIL MAILPATH
-do eval test \${$as_var+y} \
-  && ( (unset $as_var) || exit 1) >/dev/null 2>&1 && unset $as_var || :
-done
-PS1='$ '
-PS2='> '
-PS4='+ '
-
-# NLS nuisances.
-LC_ALL=C
-export LC_ALL
-LANGUAGE=C
-export LANGUAGE
-
-# CDPATH.
-(unset CDPATH) >/dev/null 2>&1 && unset CDPATH
 _m4_popdef([AS_EXIT])])# _AS_SHELL_SANITIZE
 
 
