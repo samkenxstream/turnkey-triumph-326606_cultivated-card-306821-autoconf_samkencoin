@@ -359,16 +359,64 @@ if test -d /proc/$$/fdinfo; then
   done
 
 else
-  # Shell redirection operations can only tell whether an fd is open,
-  # not whether it is readable or writable, so this is a last resort.
-  # `exec >&n` fails in POSIX sh when fd N is closed, but succeeds
-  # regardless of whether fd N is open in some old shells, e.g. Solaris
-  # /bin/sh.  We can live with that; at least it never fails when fd N
-  # is *open*.
-  if (exec 3>&0) 2>/dev/null; then :; else exec 0</dev/null; fi
-  if (exec 3>&1) 2>/dev/null; then :; else exec 1>/dev/null; fi
-  if (exec 3>&2)            ; then :; else exec 2>/dev/null; fi
+  # If lsof is available, we can ask it to print just the information
+  # we want, in a format that's easy to parse.
+  # We can't run this command inside backquotes; with some shells that
+  # may cause the parent shell to have a pipe active on fd 0 right when
+  # lsof scans its file table.
+  # lsof may exist but not actually work, e.g. if it's restricted to root.
+  : > as_fd_status.$$
+  if command -v lsof > /dev/null 2>&1; then
+    lsof -a -p $$ -d 0,1,2 -F fa > as_fd_status.$$ 2> /dev/null || :
+  fi
+  as_fd_status=`cat as_fd_status.$$`
 
+  if test -n "$as_fd_status"; then
+    case "$as_fd_status" in *f0?a[ru]*) ;; *) exec 0</dev/null;; esac
+    case "$as_fd_status" in *f1?a[wu]*) ;; *) exec 1>/dev/null;; esac
+    case "$as_fd_status" in *f2?a[wu]*) ;; *) exec 2>/dev/null;; esac
+
+  else
+    # BSD fstat can also print the information we want.  The same concerns
+    # re backquotes and privilege restrictions as above apply.
+    if command -v fstat > /dev/null 2>&1; then
+      fstat -p $$ -n > as_fd_status.$$ 2> /dev/null || :
+    fi
+
+    # fstat's output is a fixed space-separated set of columns, not
+    # designed for machine parsing:
+    #   USER CMD PID FD DEV INUM MODE SZ|DV R/W.
+    # Pipes and sockets are formatted differently from regular files
+    # and device nodes, with an unpredictable number of columns in
+    # between FD and R/W.  We just ignore everything after the fd
+    # and before the last few characters on the line.
+    # If there are unexpected spaces in the USER or CMD columns, the
+    # sed program will output nothing and we will go on to the next
+    # case.
+    # The first sed 's' command has hard tabs in its arguments.
+    as_fd_status="`sed -ne '[
+      s/[ 	][ 	]*/ /g
+      s/ $//
+      s/^[^ ]* [^ ]* [0-9]* \([012]\)\**.* \([rw][rw]*\)$/f\1,\2,/p
+    ]' as_fd_status.$$`"
+    if test -n "$as_fd_status"; then
+      case "$as_fd_status" in *f0,r,*|*f0,rw,*) ;; *) exec 0</dev/null;; esac
+      case "$as_fd_status" in *f1,w,*|*f1,rw,*) ;; *) exec 1>/dev/null;; esac
+      case "$as_fd_status" in *f2,w,*|*f2,rw,*) ;; *) exec 2>/dev/null;; esac
+
+    else
+      # Shell redirection operations can only tell whether an fd is open,
+      # not whether it is readable or writable, so this is a last resort.
+      # `exec >&n` fails in POSIX sh when fd N is closed, but succeeds
+      # regardless of whether fd N is open in some old shells, e.g. Solaris
+      # /bin/sh.  We can live with that; at least it never fails when fd N
+      # is *open*.
+      if (exec 3>&0) 2>/dev/null; then :; else exec 0</dev/null; fi
+      if (exec 3>&1) 2>/dev/null; then :; else exec 1>/dev/null; fi
+      if (exec 3>&2)            ; then :; else exec 2>/dev/null; fi
+    fi
+  fi
+  rm -f as_fd_status.$$
 fi
 ])
 
