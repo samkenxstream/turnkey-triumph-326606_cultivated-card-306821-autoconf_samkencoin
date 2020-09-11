@@ -42,6 +42,7 @@ edit = sed \
 	-e 's|@PERL[@]|$(PERL)|g' \
 	-e 's|@PERL_FLOCK[@]|$(PERL_FLOCK)|g' \
 	-e 's|@bindir[@]|$(bindir)|g' \
+	-e 's|@datadir[@]|$(datadir)|g' \
 	-e 's|@pkgdatadir[@]|$(pkgdatadir)|g' \
 	-e 's|@prefix[@]|$(prefix)|g' \
 	-e 's|@autoconf-name[@]|'`echo autoconf | sed '$(transform)'`'|g' \
@@ -53,7 +54,10 @@ edit = sed \
 	-e 's|@AWK[@]|$(AWK)|g' \
 	-e 's|@RELEASE_YEAR[@]|$(RELEASE_YEAR)|g' \
 	-e 's|@VERSION[@]|$(VERSION)|g' \
+	-e 's|@APIVERSION[@]|$(VERSION)|g' \
+	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
 	-e 's|@PACKAGE_NAME[@]|$(PACKAGE_NAME)|g' \
+	-e 's|@PACKAGE_BUGREPORT[@]|$(PACKAGE_BUGREPORT)|g' \
 	-e 's|@configure_input[@]|Generated from $@.in; do not edit by hand.|g'
 
 include $(srcdir)/lib/freeze.mk

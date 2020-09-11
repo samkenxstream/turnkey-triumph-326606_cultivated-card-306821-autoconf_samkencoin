@@ -38,6 +38,7 @@ gnulib_files="
 
 automake_files="
         lib/Automake/Channels.pm
+        lib/Automake/Config.in
         lib/Automake/Configure_ac.pm
         lib/Automake/FileUtils.pm
         lib/Automake/Getopt.pm
@@ -73,6 +74,9 @@ for file in $automake_files; do
     fbase="${file##*/}"
     dest="${srcdir}/lib/Autom4te/${fbase}"
     run "$WGET" -nv -O "${scratch}/${fbase}" "${automake_gitweb}${file}"
-    run "$PERL" -pi -e 's/Automake::/Autom4te::/g' "${scratch}/${fbase}"
+    run "$PERL" -pi \
+        -e 's/\bAutomake::/Autom4te::/g;' \
+        -e 's/\bAUTOMAKE_LIBDIR\b/AUTOM4TE_LIBDIR/g;' \
+        "${scratch}/${fbase}"
     run "$move_if_change" "${scratch}/${fbase}" "$dest"
 done

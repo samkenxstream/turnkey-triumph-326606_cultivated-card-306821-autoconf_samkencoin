@@ -41,7 +41,22 @@ dist_perllib_DATA = \
   lib/Autom4te/Request.pm \
   lib/Autom4te/XFile.pm
 
-TAGS_FILES += $(dist_perllib_DATA)
+nodist_perllib_DATA = \
+  lib/Autom4te/Config.pm
+
+# Config.pm needs to depend on Makefile so that it is rebuilt when the
+# prefix, etc. changes.  Unfortunately, suffix rules cannot have
+# additional dependencies, so we have to use an explicit rule.
+EXTRA_DIST += lib/Autom4te/Config.in
+CLEANFILES += $(nodist_perllib_DATA)
+lib/Autom4te/Config.pm: $(srcdir)/lib/Autom4te/Config.in Makefile
+	rm -f $@ $@-t
+	$(MKDIR_P) $(@D)
+	$(edit) $(srcdir)/lib/Autom4te/Config.in > $@-t
+	chmod a-w $@-t
+	mv -f $@-t $@
+
+TAGS_FILES += $(dist_perllib_DATA) $(nodist_perllib_DATA)
 # Note: ETAGS_ARGS should have already been extended to handle perl files.
 
 ## ------------------------------------------ ##
@@ -51,9 +66,7 @@ TAGS_FILES += $(dist_perllib_DATA)
 nodist_pkgdata_DATA = lib/autom4te.cfg
 EXTRA_DIST += lib/autom4te.in
 
-# All the files below depend on Makefile so that they are rebuilt
-# when the prefix, etc. changes. Unfortunately, suffix rules
-# cannot have additional dependencies, so we have to use explicit rules.
+# lib/autom4te.cfg also needs to depend on the Makefile; see above
 CLEANFILES += lib/autom4te.cfg
 lib/autom4te.cfg: $(srcdir)/lib/autom4te.in Makefile
 	rm -f $@ $@-t

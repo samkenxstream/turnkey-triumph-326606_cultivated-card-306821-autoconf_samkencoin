@@ -1,5 +1,4 @@
-# Copyright (C) 2002-2003, 2006, 2008-2017, 2020 Free Software
-# Foundation, Inc.
+# Copyright (C) 2002-2020 Free Software Foundation, Inc.
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +14,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package Autom4te::ChannelDefs;
-
-use Autom4te::Channels;
 
 =head1 NAME
 
@@ -52,6 +49,17 @@ use strict;
 use warnings FATAL => 'all';
 
 use Exporter;
+
+use Autom4te::Channels;
+use Autom4te::Config;
+BEGIN
+{
+  if ($perl_threads)
+    {
+      require threads;
+      import threads;
+    }
+}
 
 use vars qw (@EXPORT @ISA);
 @ISA = qw (Exporter);
