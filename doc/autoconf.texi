@@ -1877,21 +1877,24 @@ distribution tar ball names (e.g., @samp{autoconf}).  It defaults to
 other than alphanumerics and underscores are changed to @samp{-}.  If
 provided, @var{url} should be the home page for the package.
 
-All the arguments of @code{AC_INIT} must be static, i.e., there should not
-be any shell computation, quotes, or newlines, but they can be computed
-by M4.  This is because the package information strings are expanded at
-M4 time into several contexts, and must give the same text at shell time
-whether used in single-quoted strings, double-quoted strings, quoted
-here-documents, or unquoted here-documents.  It is permissible to use
-@code{m4_esyscmd} or @code{m4_esyscmd_s} for computing a version string
-that changes with every commit to a version control system (in fact,
-Autoconf does just that, for all builds of the development tree made
-between releases).
+Leading and trailing whitespace is stripped from all the arguments to
+@code{AC_INIT}, and interior whitespace is collapsed to a single space.
+
+The arguments to @code{AC_INIT} may be computed by M4, when
+@command{autoconf} is run.  For instance, it is fine for the
+@var{version} argument to be an invocation of @code{m4_esyscmd} that
+runs a command that determines the package's version from information
+stored in the package's version control system.  However, they may not
+be computed by the shell, when @command{configure} is run; if they
+contain any construct that would cause computation by the shell,
+Autoconf will issue an error.  This restriction is because the arguments
+to AC_INIT are written into @file{configure} several times, in different
+places, only some of which are subject to shell variable and command
+substitution.
 
 The @var{tarname} argument is used to construct filenames.
-In addition to being static, it should not contain wildcard
-characters, white space, or anything else that could be troublesome
-as part of a file or directory name.
+It should not contain wildcard characters, white space, or anything else
+that could be troublesome as part of a file or directory name.
 
 The following M4 macros (e.g., @code{AC_PACKAGE_NAME}), output variables
 (e.g., @code{PACKAGE_NAME}), and preprocessor symbols (e.g.,
@@ -1947,6 +1950,10 @@ should inspect @samp{$@@} or @samp{$*} immediately after calling
 of updating @samp{$@@} and @samp{$*}.  However, we suggest that you use
 standard macros like @code{AC_ARG_ENABLE} instead of attempting to
 implement your own option processing.  @xref{Site Configuration}.
+
+If you use the @code{AC_PACKAGE} M4 macros, beware that they may contain
+characters that are significant to M4.  In almost all cases, you should
+refer to them using @code{m4_defn}.  @xref{Programming in M4sugar}.
 
 @node Versioning
 @section Dealing with Autoconf versions
