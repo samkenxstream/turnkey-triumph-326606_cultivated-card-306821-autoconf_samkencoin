@@ -909,6 +909,9 @@ This module contains a source file for the replacement header, along
 with an Autoconf macro that arranges to use the replacement header on
 old-fashioned systems.
 
+For more information, consult the Gnulib website,
+@uref{https://@/www.gnu.org/@/software/@/gnulib/}.
+
 @node Libtool
 @section Libtool
 
@@ -1879,18 +1882,59 @@ provided, @var{url} should be the home page for the package.
 
 Leading and trailing whitespace is stripped from all the arguments to
 @code{AC_INIT}, and interior whitespace is collapsed to a single space.
+This means that, for instance, if you want to put several email
+addresses in @var{bug-report}, you can put each one on its own line:
+
+@smallexample
+# We keep having problems with the mail hosting for
+# gnomovision.example, so give people an alternative.
+AC_INIT([Gnomovision], [17.0.1], [
+    bugs@@gnomovision.example
+    or gnomo-bugs@@reliable-email.example
+])
+@end smallexample
 
 The arguments to @code{AC_INIT} may be computed by M4, when
-@command{autoconf} is run.  For instance, it is fine for the
-@var{version} argument to be an invocation of @code{m4_esyscmd} that
-runs a command that determines the package's version from information
-stored in the package's version control system.  However, they may not
-be computed by the shell, when @command{configure} is run; if they
-contain any construct that would cause computation by the shell,
-Autoconf will issue an error.  This restriction is because the arguments
-to AC_INIT are written into @file{configure} several times, in different
-places, only some of which are subject to shell variable and command
-substitution.
+@command{autoconf} is run.  For instance, if you want to include the
+package's version number in the @var{tarname}, but you don't want to
+repeat it, you can use a helper macro:
+
+@smallexample
+m4_define([gnomo_VERSION], [17.0.1])
+AC_INIT([Gnomovision],
+        m4_defn([gnomo_VERSION]),
+        [bugs@@gnomovision.example],
+        [gnomo-]m4_defn([gnomo_VERSION]))
+@end smallexample
+
+This uses @code{m4_defn} to produce the expansion of @code{gnomo_VERSION}
+@emph{as a quoted string}, so that if there happen to be any more M4
+macro names in @code{gnomo_VERSION}, they will not themselves be
+expanded. @xref{Defn,,Renaming Macros,m4,GNU m4 macro processor}.
+
+Continuing this example, if you don't want to embed the version number
+in @file{configure.ac} at all, you can use @code{m4_esyscmd} to look it
+up somewhere else when @command{autoconf} is run:
+
+@smallexample
+m4_define([gnomo_VERSION],
+  m4_esyscmd([build-aux/git-version-gen .tarball-version])
+AC_INIT([Gnomovision],
+        m4_defn([gnomo_VERSION]),
+        [bugs@@gnomovision.example],
+        [gnomo-]m4_defn([gnomo_VERSION]))
+@end smallexample
+
+This uses the utility script @command{git-version-gen} to look up
+the package's version in its version control metadata.  This script
+is part of Gnulib (@pxref{Gnulib}).
+
+However, the arguments to @code{AC_INIT} may not be computed by the
+shell, when @command{configure} is run; if they contain any construct
+that would cause computation by the shell, @command{autoconf} will issue
+an error.  This restriction is because the arguments to AC_INIT are
+written into @file{configure} several times, in different places, only
+some of which are subject to shell variable and command substitution.
 
 The @var{tarname} argument is used to construct filenames.
 It should not contain wildcard characters, white space, or anything else
